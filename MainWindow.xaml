@@ -6,8 +6,10 @@
         xmlns:local="clr-namespace:Windows_Telemetry_Manager"
         mc:Ignorable="d"
         Title="Windows Telemetry Manager" Height="450" Width="800">
-    <Grid>
+    <Grid Margin="0,0,0,209">
         <Label Content="Telemetry Status: " HorizontalAlignment="Left" Height="25" Margin="316,31,0,0" VerticalAlignment="Top" Width="200" Name="statusLabel"/>
+        <Button Content="Enable Telemetry" HorizontalAlignment="Left" Height="40" Margin="100,95,0,0" VerticalAlignment="Top" Width="140" Name="enableButton" Click="enableButton_Click"/>
+        <Button Content="Disable Telemetry" Height="40" Margin="560,95,100,0" VerticalAlignment="Top" Name="disableButton" Click="disableButton_Click"/>
 
     </Grid>
 </Window>

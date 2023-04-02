@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.ServiceProcess;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -12,7 +14,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using Microsoft.Win32;
+using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Windows_Telemetry_Manager
 {
@@ -24,7 +27,74 @@ namespace Windows_Telemetry_Manager
         public MainWindow()
         {
             InitializeComponent();
-            
+            reloadStatusLabel();
+
+            // Check if running on windows 10 or higher and shows messagebox if not
+            if (!(Environment.OSVersion.Version.Major >= 6))
+            {
+                MessageBox.Show("This program only runs on Windows 10 or higher.");
+                Environment.Exit(0);
+            }
+        }
+        
+        //check if telemetry is enabled using service api
+        private bool telemetryEnabled()
+        {
+            try
+            {   
+                // check if the service is running. If it is return true; else return false
+                if (TelemetryService.telemetryService.Status == ServiceControllerStatus.Running) { return true;} else if (TelemetryService.telemetryService.StartType == ServiceStartMode.Disabled){ return false;} else { MessageBox.Show("Unable to tell telemetry service start type assuming true"); return true; }
+            }
+            // show messagebox error if something happens and return false
+            catch (Exception ex) { MessageBox.Show(ex.ToString()); return true; }
+        }
+
+        // attempts to disable telemetry using sc since we can't do it using services api (buggy try running it as administrator)
+        private void disableTelemetry()
+        {
+            try
+            {
+                // create process with start info 
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo();
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.CreateNoWindow = true;
+                p.StartInfo.FileName = "sc";
+                p.StartInfo.Arguments = "config \"Connected User Experiences and Telemetry\" start=disabled";
+                p.StartInfo.RedirectStandardInput = true;
+                p.Start();
+
+                // show messagebox and rewrite status label
+                MessageBox.Show("Telemetry Sucessfully Disabled");
+                reloadStatusLabel();
+            } catch (Exception ex) {MessageBox.Show(ex.ToString()); reloadStatusLabel(); }
+        }
+
+        //attempts to disable telemetry using commands. Still a bit buggy (try running it as administrator)
+        private void enableTelemetry()
+        {
+            try
+            {
+                // create process with start info 
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo();
+                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.CreateNoWindow = true;
+                p.StartInfo.FileName = "sc";
+                p.StartInfo.Arguments = "config \"Connected User Experiences and Telemetry\" start=auto";
+                p.StartInfo.RedirectStandardInput = true;
+                p.Start();
+
+                // show messagebox and rewrite status label
+                MessageBox.Show("Telemetry Sucessfully Enabled");
+                reloadStatusLabel();
+            }
+            catch (Exception ex) { MessageBox.Show(ex.ToString()); reloadStatusLabel(); }
+        }
+
+        // writes telemetry status to status label
+        private void reloadStatusLabel()
+        {
             //write if telemetry is enabled
             statusLabel.Content = "Telemetry Enabled: " + telemetryEnabled().ToString();
 
@@ -33,21 +103,31 @@ namespace Windows_Telemetry_Manager
             {
                 statusLabel.Foreground = Brushes.Red;
             }
-            else {statusLabel.Foreground = Brushes.Green;}
+            else { statusLabel.Foreground = Brushes.Green; }
         }
 
-        
-        /*Todo: add another way of disabling telemetry because registry disabling doesn't work on windows 10 and 11 home editions
-        check if there is hopefully not a half-assed services api and disable telemetry service. Taskscheduler also works to*/
-        
-        //check if telemetry is enabled using registry key
-        private bool telemetryEnabled()
+        private void enableButton_Click(object sender, RoutedEventArgs e)
         {
-            if (Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection", "AllowTelemetry", null) == null)
+            if (telemetryEnabled())
             {
-                return true;
+                MessageBox.Show("Telemetry already enabled");
             }
-            else { return false; }
+            else {enableTelemetry();}
         }
+
+        private void disableButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!telemetryEnabled())
+            {
+                MessageBox.Show("Telemetry already disabled");
+            } else { disableTelemetry();}
+        }
+    }
+
+    // static class for accessing telemetry service variable anywhere
+    public static class TelemetryService
+    {
+        // initalize service
+        public static ServiceController telemetryService = new ServiceController("Connected User Experiences and Telemetry", Environment.MachineName);
     }
 }
