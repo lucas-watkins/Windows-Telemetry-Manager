@@ -43,7 +43,7 @@ namespace Windows_Telemetry_Manager
             try
             {   
                 // check if the service is running. If it is return true; else return false
-                if (TelemetryService.telemetryService.Status == ServiceControllerStatus.Running) { return true;} else if (TelemetryService.telemetryService.StartType == ServiceStartMode.Disabled){ return false;} else { MessageBox.Show("Unable to tell telemetry service start type assuming true"); return true; }
+                if (TelemetryService.telemetryService.Status == ServiceControllerStatus.Running) { return true;} else if (TelemetryService.telemetryService.Status == ServiceControllerStatus.Stopped){ return false;} else { MessageBox.Show("Unable to tell if telemetry service is running. Assuming it is"); return true; }
             }
             // show messagebox error if something happens and return false
             catch (Exception ex) { MessageBox.Show(ex.ToString()); return true; }
@@ -57,14 +57,16 @@ namespace Windows_Telemetry_Manager
                 // create process with start info 
                 Process p = new Process();
                 p.StartInfo = new ProcessStartInfo();
-                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.UseShellExecute = true;
+                p.StartInfo.Verb = "runas";
                 p.StartInfo.CreateNoWindow = true;
                 p.StartInfo.FileName = "sc";
-                p.StartInfo.Arguments = "config \"Connected User Experiences and Telemetry\" start=disabled";
-                p.StartInfo.RedirectStandardInput = true;
+                p.StartInfo.Arguments = "config \"DiagTrack\" start=disabled";
+                p.StartInfo.RedirectStandardInput = false;
                 p.Start();
 
-                // show messagebox and rewrite status label
+                // show messagebox and rewrite status label and start service
+                stopStartService("DiagTrack", "stop");
                 MessageBox.Show("Telemetry Sucessfully Disabled");
                 reloadStatusLabel();
             } catch (Exception ex) {MessageBox.Show(ex.ToString()); reloadStatusLabel(); }
@@ -78,14 +80,16 @@ namespace Windows_Telemetry_Manager
                 // create process with start info 
                 Process p = new Process();
                 p.StartInfo = new ProcessStartInfo();
-                p.StartInfo.UseShellExecute = false;
+                p.StartInfo.UseShellExecute = true;
+                p.StartInfo.Verb = "runas";
                 p.StartInfo.CreateNoWindow = true;
                 p.StartInfo.FileName = "sc";
-                p.StartInfo.Arguments = "config \"Connected User Experiences and Telemetry\" start=auto";
-                p.StartInfo.RedirectStandardInput = true;
+                p.StartInfo.Arguments = "config \"DiagTrack\" start=auto";
+                p.StartInfo.RedirectStandardInput = false;
                 p.Start();
 
-                // show messagebox and rewrite status label
+                // show messagebox and rewrite status label and start service
+                stopStartService("DiagTrack", "start");
                 MessageBox.Show("Telemetry Sucessfully Enabled");
                 reloadStatusLabel();
             }
@@ -112,15 +116,29 @@ namespace Windows_Telemetry_Manager
             {
                 MessageBox.Show("Telemetry already enabled");
             }
-            else {enableTelemetry();}
+            else {enableTelemetry(); reloadStatusLabel(); }
         }
 
         private void disableButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!telemetryEnabled())
+            if (telemetryEnabled() == false)
             {
                 MessageBox.Show("Telemetry already disabled");
-            } else { disableTelemetry();}
+            } else { disableTelemetry(); reloadStatusLabel(); }
+        }
+
+        // stop or start service
+        private void stopStartService(string name, string mode)
+        {
+            Process p = new Process();
+            p.StartInfo = new ProcessStartInfo();
+            p.StartInfo.CreateNoWindow = true;
+            p.StartInfo.UseShellExecute = true;
+            p.StartInfo.Verb = "runas";
+            p.StartInfo.FileName = "net";
+            p.StartInfo.Arguments = mode + " " + name;
+            p.Start();
+
         }
     }
 
