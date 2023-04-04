@@ -1,21 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.ServiceProcess;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 
 namespace Windows_Telemetry_Manager
 {
@@ -30,9 +17,9 @@ namespace Windows_Telemetry_Manager
             reloadStatusLabel();
 
             // Check if running on windows 10 or higher and shows messagebox if not
-            if (!(Environment.OSVersion.Version.Major >= 6))
+            if (!(Environment.OSVersion.Version.Major >= 10))
             {
-                MessageBox.Show("This program only runs on Windows 10 or higher.");
+                MessageBox.Show("This program only runs on Windows 10 or higher", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Error);
                 Environment.Exit(0);
             }
         }
@@ -43,10 +30,10 @@ namespace Windows_Telemetry_Manager
             try
             {   
                 // check if the service is running. If it is return true; else return false
-                if (TelemetryService.telemetryService.Status == ServiceControllerStatus.Running) { return true;} else if (TelemetryService.telemetryService.Status == ServiceControllerStatus.Stopped){ return false;} else { MessageBox.Show("Unable to tell if telemetry service is running. Assuming it is"); return true; }
+                if (TelemetryService.getService().Status == ServiceControllerStatus.Running) { return true;} else if (TelemetryService.getService().Status == ServiceControllerStatus.Stopped){ return false;} else { MessageBox.Show("Unable to tell if telemetry service is running. Assuming it is"); return true; }
             }
             // show messagebox error if something happens and return false
-            catch (Exception ex) { MessageBox.Show(ex.ToString()); return true; }
+            catch (Exception ex) { MessageBox.Show(ex.ToString(), "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Hand); return true; }
         }
 
         // attempts to disable telemetry using sc since we can't do it using services api (buggy try running it as administrator)
@@ -54,7 +41,7 @@ namespace Windows_Telemetry_Manager
         {
             try
             {
-                // create process with start info 
+                // create process with start info to run as admin 
                 Process p = new Process();
                 p.StartInfo = new ProcessStartInfo();
                 p.StartInfo.UseShellExecute = true;
@@ -69,7 +56,9 @@ namespace Windows_Telemetry_Manager
                 stopStartService("DiagTrack", "stop");
                 MessageBox.Show("Telemetry Sucessfully Disabled");
                 reloadStatusLabel();
-            } catch (Exception ex) {MessageBox.Show(ex.ToString()); reloadStatusLabel(); }
+            }
+            catch (System.ComponentModel.Win32Exception) { MessageBox.Show("Operation Canceled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Exclamation); reloadStatusLabel(); }
+            catch (Exception ex) {MessageBox.Show(ex.ToString()); reloadStatusLabel(); }
         }
 
         //attempts to disable telemetry using commands. Still a bit buggy (try running it as administrator)
@@ -77,7 +66,7 @@ namespace Windows_Telemetry_Manager
         {
             try
             {
-                // create process with start info 
+                // create process with start info to run as admin
                 Process p = new Process();
                 p.StartInfo = new ProcessStartInfo();
                 p.StartInfo.UseShellExecute = true;
@@ -93,6 +82,7 @@ namespace Windows_Telemetry_Manager
                 MessageBox.Show("Telemetry Sucessfully Enabled");
                 reloadStatusLabel();
             }
+            catch (System.ComponentModel.Win32Exception) { MessageBox.Show("Operation Canceled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Exclamation); reloadStatusLabel(); }
             catch (Exception ex) { MessageBox.Show(ex.ToString()); reloadStatusLabel(); }
         }
 
@@ -114,7 +104,7 @@ namespace Windows_Telemetry_Manager
         {
             if (telemetryEnabled())
             {
-                MessageBox.Show("Telemetry already enabled");
+                MessageBox.Show("Telemetry already enabled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             else {enableTelemetry(); reloadStatusLabel(); }
         }
@@ -123,7 +113,7 @@ namespace Windows_Telemetry_Manager
         {
             if (telemetryEnabled() == false)
             {
-                MessageBox.Show("Telemetry already disabled");
+                MessageBox.Show("Telemetry already disabled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Error);
             } else { disableTelemetry(); reloadStatusLabel(); }
         }
 
@@ -145,7 +135,16 @@ namespace Windows_Telemetry_Manager
     // static class for accessing telemetry service variable anywhere
     public static class TelemetryService
     {
-        // initalize service
-        public static ServiceController telemetryService = new ServiceController("Connected User Experiences and Telemetry", Environment.MachineName);
+        // method to return service
+        public static ServiceController getService()
+        {
+            try
+            {
+                ServiceController telemetryService = new ServiceController("Connected User Experiences and Telemetry", Environment.MachineName);
+                return telemetryService;
+            }
+            catch (Exception) { MessageBox.Show("Unable to Find Telemetry Service", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Error); Environment.Exit(0); return new ServiceController(); }
+        }
+        
     }
 }
