@@ -130,6 +130,22 @@ namespace Windows_Telemetry_Manager
             p.Start();
 
         }
+
+        // Runs winver when windows info button is pressed
+        private void winverButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process p = new Process(); p.StartInfo = new ProcessStartInfo();
+            p.StartInfo.CreateNoWindow = true; p.StartInfo.FileName = "winver"; p.Start();
+
+        }
+
+        // starts privacy settings
+        private void privacySettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process p = new Process(); p.StartInfo = new ProcessStartInfo();
+            p.StartInfo.CreateNoWindow = true;
+            p.StartInfo.FileName = "ms-settings:privacy"; p.StartInfo.Arguments = ""; p.Start();
+        }
     }
 
     // static class for accessing telemetry service variable anywhere
