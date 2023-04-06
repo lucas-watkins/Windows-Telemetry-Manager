@@ -54,7 +54,7 @@ namespace Windows_Telemetry_Manager
 
                 // show messagebox and rewrite status label and start service
                 stopStartService("DiagTrack", "stop");
-                MessageBox.Show("Telemetry Sucessfully Disabled");
+                MessageBox.Show("Telemetry Sucessfully Disabled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Information);
                 reloadStatusLabel();
             }
             catch (System.ComponentModel.Win32Exception) { MessageBox.Show("Operation Canceled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Exclamation); reloadStatusLabel(); }
@@ -79,7 +79,7 @@ namespace Windows_Telemetry_Manager
 
                 // show messagebox and rewrite status label and start service
                 stopStartService("DiagTrack", "start");
-                MessageBox.Show("Telemetry Sucessfully Enabled");
+                MessageBox.Show("Telemetry Sucessfully Enabled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Information);
                 reloadStatusLabel();
             }
             catch (System.ComponentModel.Win32Exception) { MessageBox.Show("Operation Canceled", "Windows Telemetry Manager", MessageBoxButton.OK, MessageBoxImage.Exclamation); reloadStatusLabel(); }
